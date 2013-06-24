@@ -4,7 +4,6 @@
 def main():
 
   import numpy as np
-  #import scipy as sp
   import cairo, Image
   from time import time as time
   from operator import itemgetter
@@ -31,18 +30,20 @@ def main():
 
   pii = 2.*pi
   C = 0.5
-  ITTMAX = 10000
+  ITTMAX = 1000
 
   N = 1000
   ONE = 1./N
-  STP = ONE*0.9
+  STP = ONE
 
   NUM = 200
-  FLOCK_RAD = 0.01
+  FLOCK_RAD = 0.1
 
   SEPARATION_PRI = 0.5
   ALIGNMENT_PRI = 0.3
   COHESION_PRI = 0.2
+
+  MAXACC = STP
 
   ## CLASSES
 
@@ -51,15 +52,15 @@ def main():
     c = [0]
     X = zeros(NUM,dtype=np.float)
     Y = zeros(NUM,dtype=np.float)
-    THE = zeros(NUM,dtype=np.float)
-    VEL = zeros(NUM,dtype=np.float)
+    DX = zeros(NUM,dtype=np.float)
+    DY = zeros(NUM,dtype=np.float)
 
-    SEP_VEL = zeros(NUM,dtype=np.float)
-    SEP_THE = zeros(NUM,dtype=np.float)
-    ALI_VEL = zeros(NUM,dtype=np.float)
-    ALI_THE = zeros(NUM,dtype=np.float)
-    COH_VEL = zeros(NUM,dtype=np.float)
-    COH_THE = zeros(NUM,dtype=np.float)
+    SEPX = zeros(NUM,dtype=np.float)
+    SEPY = zeros(NUM,dtype=np.float)
+    ALIX = zeros(NUM,dtype=np.float)
+    ALIY = zeros(NUM,dtype=np.float)
+    COHX = zeros(NUM,dtype=np.float)
+    COHX = zeros(NUM,dtype=np.float)
 
     A = zeros( (NUM,NUM), dtype=np.float )
     R = zeros( (NUM,NUM), dtype=np.float )
@@ -85,43 +86,80 @@ def main():
         inflock[i] = False
         self.F[i,:] = inflock[:]
 
-    def step(self):
-      
-      i = self.i
-      self.
-      self.X[i] += cos(self.THE[i])*self.VEL[i]
-      self.Y[i] += sin(self.THE[i])*self.VEL[i]
+    def iterate(self):
+
+      self.X[:] += self.DX[:]
+      self.Y[:] += self.DY[:]
 
 
   class Boid(Meta):
 
-    def __init__(self, x,y,the,vel):
+    def __init__(self, x,y,dx,dy):
       self.i = self.c[0]
       self.c[0] += 1
 
       self.X[self.i] = x
       self.Y[self.i] = y
-      self.THE[self.i] = the
-      self.VEL[self.i] = vel
+      self.DX[self.i] = dy
+      self.DY[self.i] = dx
+
+    def separation(self):
+
+      inflock = self.F[self.i,:]
+      if inflock.sum() > 1:
+
+        scale = 1./sqrt( self.R[self.i,inflock] )
+
+        dx = ( self.X[i] - self.X[inflock] ) * scale
+        dy = ( self.Y[i] - self.Y[inflock] ) * scale
+
+        self.SEPX[self.i] = -dx.sum()
+        self.SEPY[self.i] = -dy.sum()
 
     def alignment(self):
 
       inflock = self.F[self.i,:]
       if inflock.sum() > 1:
-        n = inflock.sum()
-        thex = cos(self.THE[inflock])
-        they = sin(self.THE[inflock])
-        self.THE[self.i] = arctan2(they.sum()/n,thex.sum()/n)
 
+        scale = 1./self.R[self.i,inflock]**2.
+
+        dx = (self.DX[inflock]*scale).sum()
+        dy = (self.DY[inflock]*scale).sum()
+
+        self.ALIX[self.i] = dx
+        self.ALIY[self.i] = dy
+
+    def step(self):
+
+      self.DX[self.i] = 0.
+      self.DY[self.i] = 0.
+
+      acc = sqrt(square(self.SEPX[self.i]) + square(self.SEPY[self.i]))
+      if acc > MAXACC:
+        scale = MAXACC / acc
+        self.SEPX[self.i] = self.SEPX[self.i] * scale
+        self.SEPY[self.i] = self.SEPY[self.i] * scale
+        accsum = MAXACC
       else:
-        self.dTHE[self.i] = self.THE[self.i]
+        accsum = acc
 
-    #def step(self):
-      
-      #i = self.i
-      #self.X[i] += cos(self.THE[i])*self.VEL[i]
-      #self.Y[i] += sin(self.THE[i])*self.VEL[i]
+      self.DX[self.i] = self.SEPX[self.i]
+      self.DY[self.i] = self.SEPY[self.i]
 
+      if accsum >= MAXACC:
+        return
+
+      acc = sqrt(square(self.ALIX[self.i]) + square(self.ALIY[self.i]))
+      if acc > MAXACC:
+        scale = MAXACC / acc
+        self.ALIX[self.i] = self.ALIX[self.i] * scale
+        self.ALIY[self.i] = self.ALIY[self.i] * scale
+        accsum = MAXACC
+      else:
+        accsum = acc
+
+      self.DX[self.i] += self.ALIX[self.i]
+      self.DY[self.i] += self.ALIY[self.i]
 
   # BEGIN
 
@@ -130,75 +168,41 @@ def main():
   F = []
   for i in xrange(NUM):
     r = rand()*0.1
+    alpha = rand()*pi*2.
+    x = C + cos(alpha)*r
+    y = C + sin(alpha)*r
     the = rand()*pi*2.
-    vel = STP
-    x = C + cos(the)*r
-    y = C + sin(the)*r
-    F.append(Boid(x,y,the,vel))
+    dx = cos(the)*STP
+    dy = sin(the)*STP
+    dx = 0
+    dy = 0
+    F.append(Boid(x,y,dx,dy))
 
 
   plt.figure(0)
   plt.ion()
-    
+
   itt = 0
   ti = time()
   for itt in xrange(ITTMAX):
 
+    if not itt % 10:
+      plt.clf()
+      plt.plot(M.X,M.Y,'ro')
+      plt.axis([0,1,0,1])
+      plt.draw()
+
     M.set_dist()
-    M.set_phi()
+    #M.set_phi()
     M.set_flock()
 
     for boid in F:
-      boid.alignment()
+      boid.separation()
+      boid.step()
 
-    M.step()
-
-
+    M.iterate()
 
       
-      ### find objects that are too close
-      ### avoid colisions
-      #toonear = d < NR
-      #toonear[i] = False
-
-      #if toonear.sum() > 1:
-        ##speed = (NR - d[toonear])
-        ##dX[toonear] -= cos(a[toonear])*speed
-        ##dY[toonear] -= sin(a[toonear])*speed
-        #dX[toonear] -= cos(a[toonear])
-        #dY[toonear] -= sin(a[toonear])
-
-      ### find objects that are too far off
-      ### approach
-      #toofar = xand(d < DR , d > FR)
-      #toofar[i] = False
-
-      #if toofar.sum() > 1:
-        #dX[toofar] += cos(a[toofar])
-        #dY[toofar] += sin(a[toofar])
-      
-    #rnd = (1.-2.*rand(NUM)) * 2.*pi/100.*2
-    
-    #THE[:] = dTHE[:] + rnd
-    #dX += cos(THE)
-    #dY += sin(THE)
-
-    #Y += dY*STP
-    #X += dX*STP
-
-    ##THE += rnd
-
-    #if not itt % 10:
-      #plt.clf()
-      #plt.plot(X,Y,'ro')
-      #plt.axis([0,1,0,1])
-      #plt.draw()
-      
-
-  ##sur.write_to_png('{:s}.png'.format(OUT))
-  #print itt, time()-ti
-  #ti = time()
-
 
 if __name__ == '__main__' :
   main()
