@@ -38,8 +38,8 @@ def main():
 
   FUZZ = STP*0.1
 
-  NUM = 200
-  FLOCK_RAD = 0.01
+  NUM = 100
+  FLOCK_RAD = 0.1
 
   SEPARATION_PRI = 0.5
   ALIGNMENT_PRI = 0.3
@@ -121,29 +121,29 @@ def main():
 
         scale = 1./square( self.R[self.i,inflock] )
 
-        dx = ( self.X[i] - self.X[inflock] ) * scale
-        dy = ( self.Y[i] - self.Y[inflock] ) * scale
+        dx = ( self.X[self.i] - self.X[inflock] ) * scale
+        dy = ( self.Y[self.i] - self.Y[inflock] ) * scale
 
-        self.SEPX[self.i] = -dx.sum()
-        self.SEPY[self.i] = -dy.sum()
+        self.SEPX[self.i] = +dx.sum()
+        self.SEPY[self.i] = +dy.sum()
 
-    #def alignment(self):
+    def alignment(self):
 
-      #self.ALIX[self.i] = 0.
-      #self.ALIY[self.i] = 0.
+      self.ALIX[self.i] = 0.
+      self.ALIY[self.i] = 0.
 
-      #inflock = self.F[self.i,:]
-      #inflock[self.i] = False
+      inflock = self.F[self.i,:]
+      inflock[self.i] = False
 
-      #if inflock.sum() > 0:
+      if inflock.sum() > 0:
 
-        #scale = 1./square( self.R[self.i,inflock] )
+        scale = 1./square( self.R[self.i,inflock] )
 
-        #dx = self.DX[inflock] * scale
-        #dy = self.DY[inflock] * scale
+        dx = self.DX[inflock] * scale
+        dy = self.DY[inflock] * scale
 
-        #self.ALIX[self.i] = dx.sum()
-        #self.ALIY[self.i] = dy.sum()
+        self.ALIX[self.i] = dx.sum()
+        self.ALIY[self.i] = dy.sum()
 
     def step(self):
 
@@ -184,7 +184,6 @@ def main():
   F = []
   for i in xrange(NUM):
     r = rand()*0.1
-    r = 0.1
     alpha = rand()*pi*2.
     x = C + cos( alpha )*r
     y = C + sin( alpha )*r
@@ -214,6 +213,7 @@ def main():
 
     for boid in F:
       boid.separation()
+      boid.alignment()
       boid.step()
 
     M.iterate()
