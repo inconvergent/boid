@@ -29,40 +29,42 @@ def main():
   xand     = np.logical_and
 
 
-  pii      = 2.*pi
-  N        = 2000
-  BACK     = 1.
-  FRONT    = 0.
-  ALPHA    = 0.5
-  OUT      = 'b'
-  C        = 0.5
-  ITTMAX   = 10000
+  pii = 2.*pi
+  C = 0.5
+  ITTMAX = 10000
 
-  ONE      = 1./N
-  STP      = ONE*0.9
+  N = 1000
+  ONE = 1./N
+  STP = ONE*0.9
 
-  NUM      = 200
-  FR       = 0.01 # follow radius
-  NR       = FR*0.9
-  DR       = 10*FR    
+  NUM = 200
+  FLOCK_RAD = 0.01
+
+  SEPARATION_PRI = 0.5
+  ALIGNMENT_PRI = 0.3
+  COHESION_PRI = 0.2
 
   ## CLASSES
 
   class Meta(object):
 
-    c   = [0]
-    X   = zeros(NUM,dtype=np.float)
-    Y   = zeros(NUM,dtype=np.float)
-    dX  = zeros(NUM,dtype=np.float)
-    dY  = zeros(NUM,dtype=np.float)
+    c = [0]
+    X = zeros(NUM,dtype=np.float)
+    Y = zeros(NUM,dtype=np.float)
     THE = zeros(NUM,dtype=np.float)
     VEL = zeros(NUM,dtype=np.float)
 
-    A   = zeros( (NUM,NUM), dtype=np.float )
-    R   = zeros( (NUM,NUM), dtype=np.float )
+    SEP_VEL = zeros(NUM,dtype=np.float)
+    SEP_THE = zeros(NUM,dtype=np.float)
+    ALI_VEL = zeros(NUM,dtype=np.float)
+    ALI_THE = zeros(NUM,dtype=np.float)
+    COH_VEL = zeros(NUM,dtype=np.float)
+    COH_THE = zeros(NUM,dtype=np.float)
 
-    F   = zeros( (NUM,NUM), dtype=np.bool )
+    A = zeros( (NUM,NUM), dtype=np.float )
+    R = zeros( (NUM,NUM), dtype=np.float )
 
+    F = zeros( (NUM,NUM), dtype=np.bool )
 
     def set_dist(self):
 
@@ -79,10 +81,16 @@ def main():
 
       for i in xrange(NUM):
         d = self.R[i,:]
-        inflock = d < FR
+        inflock = d < FLOCK_RAD
         inflock[i] = False
         self.F[i,:] = inflock[:]
-        print inflock
+
+    def step(self):
+      
+      i = self.i
+      self.
+      self.X[i] += cos(self.THE[i])*self.VEL[i]
+      self.Y[i] += sin(self.THE[i])*self.VEL[i]
 
 
   class Boid(Meta):
@@ -96,11 +104,23 @@ def main():
       self.THE[self.i] = the
       self.VEL[self.i] = vel
 
-    def step(self):
+    def alignment(self):
+
+      inflock = self.F[self.i,:]
+      if inflock.sum() > 1:
+        n = inflock.sum()
+        thex = cos(self.THE[inflock])
+        they = sin(self.THE[inflock])
+        self.THE[self.i] = arctan2(they.sum()/n,thex.sum()/n)
+
+      else:
+        self.dTHE[self.i] = self.THE[self.i]
+
+    #def step(self):
       
-      i = self.i
-      self.X[i] += cos(self.THE[i])*self.VEL[i]
-      self.Y[i] += sin(self.THE[i])*self.VEL[i]
+      #i = self.i
+      #self.X[i] += cos(self.THE[i])*self.VEL[i]
+      #self.Y[i] += sin(self.THE[i])*self.VEL[i]
 
 
   # BEGIN
@@ -129,19 +149,12 @@ def main():
     M.set_flock()
 
     for boid in F:
-      boid.step()
+      boid.alignment()
 
-      #inflock    = d < FR
-      #inflock[i] = False
+    M.step()
 
-      #if inflock.sum() > 1:
-        #n = inflock.sum()
-        #thex = cos(THE[inflock])
-        #they = sin(THE[inflock])
-        #dTHE[i] = arctan2(they.sum()/n,thex.sum()/n)
 
-      #else:
-        #dTHE[i] = THE[i]
+
       
       ### find objects that are too close
       ### avoid colisions
