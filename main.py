@@ -38,17 +38,17 @@ def main():
 
   BLACK_HOLE = STP
 
-  FUZZ = STP*0.1
+  FUZZ = STP
   #FUZZ = 0.
 
-  NUM = 100
+  NUM = 50
   FLOCK_RAD = 0.1
   NEAR_RAD = FLOCK_RAD*0.2
-  COHESION_RAD = FLOCK_RAD*1.5
+  COHESION_RAD = FLOCK_RAD
 
-  SEPARATION_PRI = 0.9
+  SEPARATION_PRI = 0.5
   ALIGNMENT_PRI = 0.4
-  COHESION_PRI = 0.4
+  COHESION_PRI = 0.1
 
   MAXACC = STP
 
@@ -127,9 +127,9 @@ def main():
 
         dx = ( self.X[self.i] - self.X[inflock] ) * scale
         dy = ( self.Y[self.i] - self.Y[inflock] ) * scale
-
-        sx = dx.sum()
-        sy = dy.sum()
+ 
+        sx = dx.sum() / N
+        sy = dy.sum() / N
 
         tot = sqrt(square(sx) + square(sy))
         if tot>BLACK_HOLE:
@@ -152,8 +152,8 @@ def main():
         dx = ( self.DX[self.i] - self.DX[inflock] ) * scale
         dy = ( self.DY[self.i] - self.DY[inflock] ) * scale
 
-        sx = dx.sum()
-        sy = dy.sum()
+        sx = dx.sum() / N
+        sy = dy.sum() / N
 
         tot = sqrt(square(sx) + square(sy))
         if tot>BLACK_HOLE:
@@ -176,8 +176,8 @@ def main():
         dx = ( self.X[self.i] - self.X[inflock] ) * scale
         dy = ( self.Y[self.i] - self.Y[inflock] ) * scale
 
-        sx = dx.sum()
-        sy = dy.sum()
+        sx = dx.sum() / N
+        sy = dy.sum() / N
 
         tot = sqrt(square(sx) + square(sy))
         if tot>BLACK_HOLE:
