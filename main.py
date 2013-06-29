@@ -27,6 +27,9 @@ def main():
   rand     = np.random.random
   xand     = np.logical_and
 
+  BACK = 1.
+  FRONT = 0.
+  ALPHA = 0.7
 
   pii = 2.*pi
   C = 0.5
@@ -36,21 +39,34 @@ def main():
   ONE = 1./N
   STP = ONE
 
-  BLACK_HOLE = STP
+  BLACK_HOLE = STP/2.
 
   FUZZ = STP
-  #FUZZ = 0.
 
   NUM = 50
-  FLOCK_RAD = 0.1
-  NEAR_RAD = FLOCK_RAD*0.2
-  COHESION_RAD = FLOCK_RAD
+  FLOCK_RAD = 0.2
+  NEAR_RAD = 0.1
+  COHESION_RAD = 0.4
 
   SEPARATION_PRI = 0.5
   ALIGNMENT_PRI = 0.4
   COHESION_PRI = 0.1
 
-  MAXACC = STP
+  #def ctx_init():
+    #sur = cairo.ImageSurface(cairo.FORMAT_ARGB32,N,N)
+    #ctx = cairo.Context(sur)
+    #ctx.scale(N,N)
+    #ctx.set_source_rgb(BACK,BACK,BACK)
+    #ctx.rectangle(0,0,1,1)
+    #ctx.fill()
+    #return sur,ctx
+  #sur,ctx = ctx_init()
+
+  #def stroke(x,y):
+      #ctx.rectangle(x,y,1./N,1./N)
+      #ctx.fill()
+      #return
+  #vstroke = np.vectorize(stroke)
 
   ## CLASSES
 
@@ -76,21 +92,16 @@ def main():
 
     def set_dist(self):
 
-      self.R[:] = cdist(*[ colstack((self.X,self.Y)) ]*2 )
-
-    #def set_phi(self):
-
-      #for i in xrange(NUM):
-        #dx = self.X[i] - self.X
-        #dy = self.Y[i] - self.Y
-        #self.A[i,:] = arctan2(dy,dx)
+      self.R[:] = cdist(*[ colstack(( self.X,self.Y )) ]*2 )
 
     def iterate(self):
 
+      ##
       alpha = rand( NUM ) *pi*2.
       self.DX[:] += cos( alpha )*FUZZ
       self.DY[:] += sin( alpha )*FUZZ
 
+      ##
       self.X[:] += self.DX[:]
       self.Y[:] += self.DY[:]
 
@@ -98,7 +109,42 @@ def main():
                         self.ALIX[:]*ALIGNMENT_PRI
       self.DY[:] += self.SEPY[:]*SEPARATION_PRI + \
                         self.ALIY[:]*ALIGNMENT_PRI
+      
+      ## respawn near other boids when exiting init circle
+      mask = sqrt(square(self.X - C) + square(self.Y - C)) > C
 
+      ## or: 
+      ## respawn near other boids when exiting unit square
+      #xmask = np.logical_or(self.X>1, self.X<0.)
+      #ymask = np.logical_or(self.Y>1, self.Y<0.)
+      #mask = np.logical_or(xmask,ymask) 
+
+      if mask.any():
+        n = mask.sum()
+        ind = (rand(n)*NUM).astype(int)
+
+        alpha = rand(n) *pi*2.
+        rndx = cos(alpha)*STP
+        rndy = sin(alpha)*STP
+        self.X[mask] = self.X[ind] + rndx
+        self.Y[mask] = self.Y[ind] + rndy
+
+        alpha = rand(n) *pi*2.
+        self.DX[mask] = cos(alpha) * STP*2
+        self.DY[mask] = sin(alpha) * STP*2
+
+      ## unit square is a torus
+      #mask = self.X > 1.
+      #self.X[mask] = self.X[mask] - 1.
+      #mask = self.X < 0.
+      #self.X[mask] = self.X[mask] + 1.
+
+      #mask = self.Y > 1.
+      #self.Y[mask] = self.Y[mask] - 1.
+      #mask = self.Y < 0.
+      #self.Y[mask] = self.Y[mask] + 1.
+
+      ## 
       self.SEPX[:] = 0.
       self.SEPY[:] = 0.
       self.ALIX[:] = 0.
@@ -211,9 +257,11 @@ def main():
 
   itt = 0
   ti = time()
+
+  #ctx.set_source_rgba(FRONT,FRONT,FRONT,ALPHA)
   for itt in xrange(ITTMAX):
 
-    if not itt % 10:
+    if not itt % 2:
       plt.clf()
       plt.plot(M.X,M.Y,'ro')
       plt.axis([0,1,0,1])
@@ -228,7 +276,9 @@ def main():
 
     M.iterate()
 
-      
+    #vstroke(M.X,M.Y)
+
+  #sur.write_to_png('img.png')
 
 if __name__ == '__main__' :
   main()
